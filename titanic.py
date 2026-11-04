@@ -359,6 +359,7 @@ from sklearn.impute import SimpleImputer
 
 # 1. Preparação dos dados pós-pipeline para o SHAP
 preprocessor = pipeline.named_steps['preprocessor']
+
 classifier = pipeline.named_steps['classifier']
 
 X_train_transformed = preprocessor.transform(X_train)
@@ -379,10 +380,24 @@ print("--- Executando análise com SHAP ---")
 explainer_shap = shap.TreeExplainer(classifier)
 shap_values = explainer_shap(X_test_clean)
 
-# Gráfico de resumo (Summary Plot) global
-plt.figure(figsize=(10, 6))
+# Configurando o tamanho da figura
+plt.figure(figsize=(11, 7))
+
+# Desenhamos o plot do SHAP sem fechar a figura automaticamente
 shap.summary_plot(shap_values, X_test_clean, feature_names=feature_names, show=False)
-plt.title("SHAP Summary Plot (Global)", fontsize=14)
+
+# Customizando as legendas explicativas do espectro diretamente nas cores
+fig = plt.gcf()
+ax = plt.gca()
+
+# Adicionando anotações textuais explicativas ao lado da colorbar padrão do SHAP
+fig.text(0.92, 0.75, '➡ Vermelho: Valor ALTO\n  (Ex: Masculino, Mais Velho, Tarifa Alta)', fontsize=10, color='red', weight='bold', va='center')
+fig.text(0.92, 0.25, '➡ Azul: Valor BAIXO\n  (Ex: Feminino, Mais Jovem, Tarifa Baixa)', fontsize=10, color='blue', weight='bold', va='center')
+
+# Legenda explicativa para a escala do eixo X (SHAP Value)
+fig.text(0.15, 0.02, 'Eixo X (SHAP Value): Valores > 0 aumentam chance de Sobrevivência | Valores < 0 diminuem chance.', fontsize=10, color='black', weight='bold', style='italic')
+
+plt.title("SHAP Summary Plot (Global) com Legenda de Espectro e Eixo X", fontsize=14, pad=25, weight='bold')
 plt.tight_layout()
 plt.show()
 
@@ -412,8 +427,27 @@ exp = explainer_lime.explain_instance(
 
 # Mostrando a visualização local do LIME no notebook
 fig = exp.as_pyplot_figure()
-plt.title("Explicação LIME (Local - Primeira Instância)", fontsize=14)
-plt.tight_layout()
+
+# Customizando e adicionando a legenda explicativa de cores no LIME especificando Sobrevivência
+fig.text(0.92, 0.75, '➡ Verde: APOIA a Sobrevivência\n  (Aumenta probabilidade)', fontsize=10, color='green', weight='bold', va='center')
+fig.text(0.92, 0.25, '➡ Vermelho: CONTRADIZ a Sobrevivência\n  (Aumenta chance de falecimento)', fontsize=10, color='red', weight='bold', va='center')
+
+# Legenda explicativa para a escala do eixo X (Weight/Contribuição do LIME) - Ajustado posição Y para -0.02 para espaçar do gráfico
+fig.text(0.15, -0.02, 'Eixo X (Weight): Magnitude do impacto local na probabilidade de sobrevivência.', fontsize=10, color='black', weight='bold', style='italic')
+
+# Legenda explicativa detalhada das variáveis (Eixo Y) - Ajustado posição Y para -0.22 para criar um espaço seguro
+legenda_variaveis = (
+    "Significado das escalas das variáveis (Eixo Y):\n"
+    "• Sex: 0 = Feminino | 1 = Masculino\n"
+    "• Pclass: 1 = Classe Alta (Luxo) | 2 = Média | 3 = Classe Baixa\n"
+    "• Embarked: 0 = Cherbourg (C) | 1 = Queenstown (Q) | 2 = Southampton (S)\n"
+    "• Fare e Age: Valores numéricos de tarifa paga e idade (padronizados)."
+)
+fig.text(0.15, -0.22, legenda_variaveis, fontsize=10, color='purple', weight='bold', style='italic')
+
+plt.title("Explicação LIME (Local) com Legendas de Sobrevivência e Variáveis", fontsize=14, pad=20, weight='bold')
+# Forçar espaço extra na parte inferior usando o tight_layout e ajustando as margens da figura
+plt.tight_layout(rect=[0, 0.1, 1, 1])
 plt.show()
 
 """### Explicação dos Resultados (SHAP e LIME)
